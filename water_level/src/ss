@@ -1,0 +1,110 @@
+// Ultrasonic water level percentage output (only % to Serial)
+#include <Arduino.h>
+
+const int trigPin = 5; // keep your current wiring
+const int echoPin = 18;
+
+// Geometry (in millimeters)
+// Sensor-to-bottom distance and glass height define the full-level distance.
+const int SENSOR_TO_BOTTOM_MM = 200;  // Distance from sensor to cup bottom
+const int GLASS_HEIGHT_MM     = 98;   // Cup inner height
+const int FULL_DISTANCE_MM    = SENSOR_TO_BOTTOM_MM - GLASS_HEIGHT_MM; // 102 mm => 100%
+
+// Sampling behavior
+const unsigned long BATCH_INTERVAL_MS = 2000;   // Every 2s start a new 5-sample batch
+const unsigned long SAMPLE_INTERVAL_MS = 100;   // 100ms between samples
+const int SAMPLE_TARGET = 5;                    // Samples per batch
+
+static float distanceMM()
+{
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  unsigned long duration = pulseIn(echoPin, HIGH, 25000); // ~25ms timeout
+  if (duration == 0) return -1.0f;
+
+  // Convert to mm (0.343 mm/us, half for round trip)
+  float d = (duration / 2.0f) * 0.343f;
+  if (d <= 0) return -1.0f;
+  return d;
+}
+
+static int mapToPercent(float dMM)
+{
+  // Invalid read
+  if (dMM < 0) return -1;
+
+  // Clamp to [0..100] using 102mm -> 100%, 200mm -> 0%
+  if (dMM <= FULL_DISTANCE_MM) return 100;            // closer than brim -> full
+  if (dMM >= SENSOR_TO_BOTTOM_MM) return 0;           // at bottom distance -> empty
+
+  float range = (float)(SENSOR_TO_BOTTOM_MM - FULL_DISTANCE_MM);
+  float pct = (float)(SENSOR_TO_BOTTOM_MM - dMM) / range * 100.0f;
+  if (pct < 0) pct = 0;
+  if (pct > 100) pct = 100;
+  return (int)(pct + 0.5f);
+}
+
+void setup()
+{
+  Serial.begin(115200);
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+}
+
+void loop()
+{
+  static unsigned long lastBatchStart = 0;
+  static unsigned long lastSampleTime = 0;
+  static bool batchActive = false;
+  static int sampleCount = 0;
+  static int validCount = 0;
+  static float sumMM = 0.0f;
+
+  unsigned long now = millis();
+
+  if (!batchActive && (now - lastBatchStart >= BATCH_INTERVAL_MS))
+  {
+    batchActive = true;
+    sampleCount = 0;
+    validCount = 0;
+    sumMM = 0.0f;
+    lastSampleTime = 0;
+  }
+
+  if (batchActive)
+  {
+    if (lastSampleTime == 0 || (now - lastSampleTime) >= SAMPLE_INTERVAL_MS)
+    {
+      float d = distanceMM();
+      if (d > 0)
+      {
+        sumMM += d;
+        validCount++;
+      }
+      sampleCount++;
+      lastSampleTime = now;
+    }
+
+    if (sampleCount >= SAMPLE_TARGET)
+    {
+      if (validCount > 0)
+      {
+        float avgMM = sumMM / (float)validCount;
+        int pct = mapToPercent(avgMM);
+        if (pct < 0) pct = 0;
+        Serial.println(pct); // only percentage
+      }
+      // else: no valid samples, skip printing this cycle
+
+      batchActive = false;
+      lastBatchStart = now;
+    }
+  }
+}
