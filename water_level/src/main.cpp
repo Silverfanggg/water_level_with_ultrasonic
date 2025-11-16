@@ -8,7 +8,7 @@ const float sound_speed = 0.343;
 const float glass_height = 104.0;
 
 const int NUM_SAMPLES = 15;
-const int MEASUREMENT_INTERVAL_MS = 200; // Her ölçüm arası 200ms
+const int MEASUREMENT_INTERVAL_MS = 200;
 
 enum MeasurementState {
   IDLE,
@@ -22,7 +22,7 @@ struct {
   int sampleCount = 0;
   unsigned long lastMeasureTime = 0;
   unsigned long lastDisplayTime = 0;
-  float lastValidAvg = 96.0; // Başlangıç: boş bardak
+  float lastValidAvg = 96.0;
   int measurementErrors = 0;
 } ctx;
 
@@ -41,7 +41,6 @@ float measureDistance()
 
   float distance_mm = (duration / 2.0) * sound_speed;
   
-  // Sensörün sonunda çok büyük değerler geliyorsa reddet
   if (distance_mm > 300 || distance_mm < 50)
     return -1.0;
   
@@ -102,7 +101,6 @@ void processMeasurement()
 
       Serial.println();
       
-      // Minimum 80% başarılı ölçüm istiyoruz
       if (validCount >= (NUM_SAMPLES * 0.8))
       {
         ctx.lastValidAvg = total / validCount;
@@ -183,4 +181,5 @@ void loop()
 
     startMeasurement();
   }
+
 }
