@@ -151,7 +151,7 @@ void setup()
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
   
-  Serial.println("\n=== Water Level Sensor (Non-Blocking) ===");
+  Serial.println("\n=== Water Level Sensor ===");
   Serial.print("Samples: ");
   Serial.print(NUM_SAMPLES);
   Serial.print(" | Interval: ");
@@ -183,3 +183,4 @@ void loop()
   }
 
 }
+
