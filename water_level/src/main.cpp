@@ -5,18 +5,20 @@ const int echoPin = 18;
 
 const float sensor_height = 200.0;
 const float glass_height = 104.0;
-const float sound_speed = 0.343; 
+const float sound_speed = 0.343;
 
 const int NUM_SAMPLES = 15;
 const int MEASUREMENT_INTERVAL_MS = 200;
 
-enum MeasurementState {
+enum MeasurementState
+{
   IDLE,
   MEASURING,
   READY
 };
 
-struct {
+struct
+{
   MeasurementState state = IDLE;
   float measurements[NUM_SAMPLES];
   int sampleCount = 0;
@@ -40,10 +42,10 @@ float measureDistance()
     return -1.0;
 
   float distance_mm = (duration / 2.0) * sound_speed;
-  
+
   if (distance_mm > 300 || distance_mm < 50)
     return -1.0;
-  
+
   return distance_mm;
 }
 
@@ -53,7 +55,7 @@ void startMeasurement()
   ctx.sampleCount = 0;
   ctx.lastMeasureTime = millis();
   ctx.measurementErrors = 0;
-  
+
   for (int i = 0; i < NUM_SAMPLES; i++)
     ctx.measurements[i] = -1;
 }
@@ -94,13 +96,15 @@ void processMeasurement()
         {
           total += ctx.measurements[i];
           validCount++;
-          if (ctx.measurements[i] < minVal) minVal = ctx.measurements[i];
-          if (ctx.measurements[i] > maxVal) maxVal = ctx.measurements[i];
+          if (ctx.measurements[i] < minVal)
+            minVal = ctx.measurements[i];
+          if (ctx.measurements[i] > maxVal)
+            maxVal = ctx.measurements[i];
         }
       }
 
       Serial.println();
-      
+
       if (validCount >= (NUM_SAMPLES * 0.8))
       {
         ctx.lastValidAvg = total / validCount;
@@ -136,10 +140,12 @@ int getWaterLevel()
 
   float water_level = (sensor_height - ctx.lastValidAvg) / glass_height;
   int percent = int(water_level * 100);
-  
-  if (percent < 0) percent = 0;
-  if (percent > 100) percent = 100;
-  
+
+  if (percent < 0)
+    percent = 0;
+  if (percent > 100)
+    percent = 100;
+
   return percent;
 }
 
@@ -147,17 +153,17 @@ void setup()
 {
   Serial.begin(115200);
   delay(500);
-  
+
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
-  
+
   Serial.println("\n=== Water Level Sensor ===");
   Serial.print("Samples: ");
   Serial.print(NUM_SAMPLES);
   Serial.print(" | Interval: ");
   Serial.print(MEASUREMENT_INTERVAL_MS);
   Serial.println("ms");
-  
+
   startMeasurement();
 }
 
@@ -181,7 +187,4 @@ void loop()
 
     startMeasurement();
   }
-
 }
-
-
