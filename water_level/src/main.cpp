@@ -4,8 +4,8 @@ const int trigPin = 5;
 const int echoPin = 18;
 
 const float sensor_height = 200.0;
-const float sound_speed = 0.343; 
 const float glass_height = 104.0;
+const float sound_speed = 0.343; 
 
 const int NUM_SAMPLES = 15;
 const int MEASUREMENT_INTERVAL_MS = 200;
@@ -183,4 +183,5 @@ void loop()
   }
 
 }
+
 
